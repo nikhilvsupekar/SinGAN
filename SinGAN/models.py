@@ -110,9 +110,9 @@ class GeneratorConcatSkip2CleanAdd(nn.Module):
         #     block = ConvBlock(max(2*N,opt.min_nfc),max(N,opt.min_nfc),opt.ker_size,opt.padd_size,1)
         #     self.body.add_module('block%d'%(i+1),block)
 
-        self.body.add_module('down1', DownBlock(max(2*int(opt.nfc/pow(2,1)), opt.min_nfc),max(N,opt.min_nfc),opt.ker_size,opt.padd_size,1))
+        # self.body.add_module('down1', DownBlock(max(2*int(opt.nfc/pow(2,1)), opt.min_nfc),max(N,opt.min_nfc),opt.ker_size,opt.padd_size,1))
         # self.body.add_module('down2', DownBlock(max(2*int(opt.nfc/pow(2,2)), opt.min_nfc),max(N,opt.min_nfc),opt.ker_size,opt.padd_size,1))
-        self.body.add_module('up1', UpBlock(max(2*int(opt.nfc/pow(2,2)), opt.min_nfc),max(N,opt.min_nfc),opt.ker_size,opt.padd_size,1))
+        # self.body.add_module('up1', UpBlock(max(2*int(opt.nfc/pow(2,2)), opt.min_nfc),max(N,opt.min_nfc),opt.ker_size,opt.padd_size,1))
         # self.body.add_module('up2', UpBlock(max(2*int(opt.nfc/pow(2,4)), opt.min_nfc),max(N,opt.min_nfc),(4, 5),1,1))
 
         self.body1 = DownBlock(max(2*int(opt.nfc/pow(2,1)), opt.min_nfc),max(N,opt.min_nfc),opt.ker_size,opt.padd_size,1)
