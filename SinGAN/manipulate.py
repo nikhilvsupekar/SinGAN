@@ -1,4 +1,6 @@
 from __future__ import print_function
+
+from torch import embedding
 import SinGAN.functions
 import SinGAN.models
 import argparse
@@ -68,7 +70,7 @@ def generate_gif(Gs,Zs,reals,NoiseAmp,opt,alpha=0.1,beta=0.9,start_scale=2,fps=1
                 z_curr = Z_opt
 
             z_in = noise_amp*z_curr+I_prev
-            I_curr = G(z_in.detach(),I_prev)
+            I_curr, embedding = G(z_in.detach(),I_prev)
 
             if (count == len(Gs)-1):
                 I_curr = functions.denorm(I_curr).detach()
@@ -129,7 +131,7 @@ def SinGAN_generate(Gs,Zs,reals,NoiseAmp,opt,in_s=None,scale_v=1,scale_h=1,n=0,g
                 z_curr = Z_opt
 
             z_in = noise_amp*(z_curr)+I_prev
-            I_curr = G(z_in.detach(),I_prev)
+            I_curr, embedding = G(z_in.detach(),I_prev)
 
             if n == len(reals)-1:
                 if opt.mode == 'train':

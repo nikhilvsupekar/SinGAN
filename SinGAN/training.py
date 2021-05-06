@@ -152,7 +152,7 @@ def train_single_scale(netD,netG,reals,Gs,Zs,in_s,NoiseAmp,opt,centers=None):
             else:
                 noise = opt.noise_amp*noise_+prev
 
-            fake = netG(noise.detach(),prev)
+            fake, embedding = netG(noise.detach(),prev)
             output = netD(fake.detach())
             errD_fake = output.mean()
             errD_fake.backward(retain_graph=True)
@@ -182,7 +182,9 @@ def train_single_scale(netD,netG,reals,Gs,Zs,in_s,NoiseAmp,opt,centers=None):
                     z_prev = functions.quant2centers(z_prev, centers)
                     plt.imsave('%s/z_prev.png' % (opt.outf), functions.convert_image_np(z_prev), vmin=0, vmax=1)
                 Z_opt = opt.noise_amp*z_opt+z_prev
-                rec_loss = alpha*loss(netG(Z_opt.detach(),z_prev),real)
+                t_out, embedding = netG(Z_opt.detach(),z_prev)
+                rec_loss = alpha*loss(t_out,real)
+                # rec_loss = alpha*loss(netG(Z_opt.detach(),z_prev),real)
                 rec_loss.backward(retain_graph=True)
                 rec_loss = rec_loss.detach()
             else:
@@ -201,7 +203,8 @@ def train_single_scale(netD,netG,reals,Gs,Zs,in_s,NoiseAmp,opt,centers=None):
 
         if epoch % 500 == 0 or epoch == (opt.niter-1):
             plt.imsave('%s/fake_sample.png' %  (opt.outf), functions.convert_image_np(fake.detach()), vmin=0, vmax=1)
-            plt.imsave('%s/G(z_opt).png'    % (opt.outf),  functions.convert_image_np(netG(Z_opt.detach(), z_prev).detach()), vmin=0, vmax=1)
+            t_out, embedding = netG(Z_opt.detach(), z_prev)
+            plt.imsave('%s/G(z_opt).png'    % (opt.outf),  functions.convert_image_np(t_out.detach()), vmin=0, vmax=1)
             #plt.imsave('%s/D_fake.png'   % (opt.outf), functions.convert_image_np(D_fake_map))
             #plt.imsave('%s/D_real.png'   % (opt.outf), functions.convert_image_np(D_real_map))
             #plt.imsave('%s/z_opt.png'    % (opt.outf), functions.convert_image_np(z_opt.detach()), vmin=0, vmax=1)
@@ -310,13 +313,13 @@ def init_models(opt):
     netG.apply(models.weights_init)
     if opt.netG != '':
         netG.load_state_dict(torch.load(opt.netG))
-    print(netG)
+    # print(netG)
 
     #discriminator initialization:
     netD = models.WDiscriminator(opt).to(opt.device)
     netD.apply(models.weights_init)
     if opt.netD != '':
         netD.load_state_dict(torch.load(opt.netD))
-    print(netD)
+    # print(netD)
 
     return netD, netG

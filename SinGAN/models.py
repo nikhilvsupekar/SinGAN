@@ -104,7 +104,7 @@ class GeneratorConcatSkip2CleanAdd(nn.Module):
         self.is_cuda = torch.cuda.is_available()
         N = opt.nfc
         self.head = ConvBlock(opt.nc_im,N,opt.ker_size,opt.padd_size,1) #GenConvTransBlock(opt.nc_z,N,opt.ker_size,opt.padd_size,opt.stride)
-        self.body = nn.Sequential()
+        # self.body = nn.Sequential()
         # for i in range(opt.num_layer-2):
         #     N = int(opt.nfc/pow(2,(i+1)))
         #     block = ConvBlock(max(2*N,opt.min_nfc),max(N,opt.min_nfc),opt.ker_size,opt.padd_size,1)
@@ -114,6 +114,9 @@ class GeneratorConcatSkip2CleanAdd(nn.Module):
         # self.body.add_module('down2', DownBlock(max(2*int(opt.nfc/pow(2,2)), opt.min_nfc),max(N,opt.min_nfc),opt.ker_size,opt.padd_size,1))
         self.body.add_module('up1', UpBlock(max(2*int(opt.nfc/pow(2,2)), opt.min_nfc),max(N,opt.min_nfc),opt.ker_size,opt.padd_size,1))
         # self.body.add_module('up2', UpBlock(max(2*int(opt.nfc/pow(2,4)), opt.min_nfc),max(N,opt.min_nfc),(4, 5),1,1))
+
+        self.body1 = DownBlock(max(2*int(opt.nfc/pow(2,1)), opt.min_nfc),max(N,opt.min_nfc),opt.ker_size,opt.padd_size,1)
+        self.body2 = UpBlock(max(2*int(opt.nfc/pow(2,2)), opt.min_nfc),max(N,opt.min_nfc),opt.ker_size,opt.padd_size,1)
 
         self.tail = nn.Sequential(
             nn.Conv2d(max(N,opt.min_nfc),opt.nc_im,kernel_size=opt.ker_size,stride =1,padding=opt.padd_size),
@@ -140,7 +143,11 @@ class GeneratorConcatSkip2CleanAdd(nn.Module):
         x = self.head(x)
         if self.once:
             print(f'GENERATOR head output = {x.shape}')
-        x = self.body(x)
+        # x = self.body(x)
+        
+        embedding = self.body1(x)
+        x = self.body2(embedding)
+
         if self.once:
             print(f'GENERATOR body output = {x.shape}')
         x = self.tail(x)
@@ -176,4 +183,4 @@ class GeneratorConcatSkip2CleanAdd(nn.Module):
 
         if self.once:
             self.once = False
-        return x+y
+        return x+y, embedding
