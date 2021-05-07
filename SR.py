@@ -45,6 +45,7 @@ if __name__ == '__main__':
             train(opt, Gs, Zs, reals, NoiseAmp)
             opt.mode = mode
         print('%f' % pow(in_scale, iter_num))
+
         Zs_sr = []
         reals_sr = []
         NoiseAmp_sr = []
@@ -53,19 +54,33 @@ if __name__ == '__main__':
         real_ = real
         opt.scale_factor = 1 / in_scale
         opt.scale_factor_init = 1 / in_scale
-        for j in range(1, iter_num + 1, 1):
-            real_ = imresize(real_, pow(1 / opt.scale_factor, 1), opt)
+        # for j in range(1, iter_num + 1, 1):
+        #     real_ = imresize(real_, pow(1 / opt.scale_factor, 1), opt)
+        #     reals_sr.append(real_)
+        #     Gs_sr.append(Gs[-1])
+        #     NoiseAmp_sr.append(NoiseAmp[-1])
+        #     z_opt = torch.full(real_.shape, 0, device=opt.device)
+        #     m = nn.ZeroPad2d(5)
+        #     z_opt = m(z_opt)
+        #     Zs_sr.append(z_opt)
+        # out = SinGAN_generate(Gs_sr, Zs_sr, reals_sr, NoiseAmp_sr, opt, in_s=reals_sr[0], num_samples=1)
+        # out = out[:, :, 0:int(opt.sr_factor * reals[-1].shape[2]), 0:int(opt.sr_factor * reals[-1].shape[3])]
+        # dir2save = functions.generate_dir2save(opt)
+        # plt.imsave('%s/%s_HR.png' % (dir2save,opt.input_name[:-4]), functions.convert_image_np(out.detach()), vmin=0, vmax=1)
+
+
+        for j in range(9):
+            real_ = reals[j]
             reals_sr.append(real_)
-            Gs_sr.append(Gs[-1])
-            NoiseAmp_sr.append(NoiseAmp[-1])
+            Gs_sr.append(Gs[j])
+            NoiseAmp_sr.append(NoiseAmp[j])
+
             z_opt = torch.full(real_.shape, 0, device=opt.device)
             m = nn.ZeroPad2d(5)
             z_opt = m(z_opt)
             Zs_sr.append(z_opt)
+
         out = SinGAN_generate(Gs_sr, Zs_sr, reals_sr, NoiseAmp_sr, opt, in_s=reals_sr[0], num_samples=1)
-        out = out[:, :, 0:int(opt.sr_factor * reals[-1].shape[2]), 0:int(opt.sr_factor * reals[-1].shape[3])]
-        dir2save = functions.generate_dir2save(opt)
-        plt.imsave('%s/%s_HR.png' % (dir2save,opt.input_name[:-4]), functions.convert_image_np(out.detach()), vmin=0, vmax=1)
 
 
 
