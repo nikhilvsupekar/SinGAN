@@ -11,6 +11,8 @@ from torch.utils.data import TensorDataset, DataLoader
 import pickle
 import torch
 import tqdm
+import torch.optim as optim
+
 
 def train(opt,Gs,Zs,reals,NoiseAmp):
     real_ = functions.read_image(opt)
@@ -341,7 +343,7 @@ def train_SR(model, input_tensor, output_tensor, num_epochs = 1000, batch_size =
     BATCH_SIZE = batch_size
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
-    train_dataset = TensorDataset(input_tensor, output_tensor)
+    train_dataset = TensorDataset(input_tensor.float().to(device), output_tensor.float().to(device))
     train_dataloader = DataLoader(train_dataset, batch_size = BATCH_SIZE, shuffle = True)
 
     criterion = nn.MSELoss()
@@ -357,8 +359,6 @@ def train_SR(model, input_tensor, output_tensor, num_epochs = 1000, batch_size =
     for epoch in range(EPOCH_START, EPOCH_END):
 
         running_loss = 0.0
-        running_loss_point = 0.0
-        running_loss_recon = 0.0
         
         for i, data in tqdm.tqdm(enumerate(train_dataloader, 0)):
             # get the inputs; data is a list of [inputs, labels]
@@ -371,7 +371,7 @@ def train_SR(model, input_tensor, output_tensor, num_epochs = 1000, batch_size =
             optimizer.zero_grad()
 
             # forward + backward + optimize
-            point_outputs, reconstruction = model(inputs)
+            point_outputs = model(inputs)
             loss = criterion(point_outputs, labels)
             
             loss.backward()

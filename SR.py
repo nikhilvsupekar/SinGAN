@@ -119,5 +119,5 @@ if __name__ == '__main__':
         model = SR(embeddings).to('cuda:0')
         Path('sr_output').mkdir(parents=True, exist_ok=True)
 
-        train_SR(model, inputs, targets, num_epochs = 10, batch_size = 64, output_dir = 'sr_output')
+        train_SR(model, inputs, targets, num_epochs = 1000, batch_size = 64, output_dir = 'sr_output')
 
