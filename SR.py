@@ -107,10 +107,10 @@ if __name__ == '__main__':
 
         out = SinGAN_generate(Gs_sr, Zs_sr, reals_sr, NoiseAmp_sr, opt, in_s=reals_sr[0], num_samples=1)
 
+        torch.save(out, 'embeddings.pt')
+
         images = list(zip(*out))[0]
         embeddings = list(zip(*out))[1]
-
-        torch.save(embeddings, 'embeddings.pt')
 
         inputs, targets = get_SR_inputs_targets(images)
 
