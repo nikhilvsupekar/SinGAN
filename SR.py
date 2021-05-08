@@ -5,15 +5,19 @@ from SinGAN.imresize import imresize
 import SinGAN.functions as functions
 
 
-def get_pixel_data_from_image(img):
+def get_pixel_data_from_image(img, base_img):
     img = img.squeeze(0).permute(1, 2, 0)
+    base_img = base_img.squeeze(0).permute(1, 2, 0)
     coords = []
     targets = []
-
+    
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
             color = list(img[i, j].cpu().numpy())
-            coords.append([i, j])
+            scaled_i = i * base_img.shape[0] / img.shape[0]
+            scaled_j = j * base_img.shape[1] / img.shape[1]
+
+            coords.append([scaled_i, scaled_j])
             targets.append(color)
     
     return torch.from_numpy(np.array(coords)), torch.from_numpy(np.array(targets))
