@@ -5,6 +5,27 @@ from SinGAN.imresize import imresize
 import SinGAN.functions as functions
 
 
+def get_pixel_data_from_image(img):
+    img = img.squeeze(0).permute(1, 2, 0)
+    coords = []
+    targets = []
+
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            color = list(img[i, j].cpu().numpy())
+            coords.append([i, j])
+            targets.append(color)
+    
+    return torch.from_numpy(np.array(coords)), torch.from_numpy(np.array(targets))
+
+
+def get_SR_inputs_targets(images):
+    coords, targets = tuple(zip(*[get_pixel_data_from_image(img) for img in images]))
+    
+    return torch.cat(coords), torch.cat(targets)
+    
+
+
 if __name__ == '__main__':
     parser = get_arguments()
     parser.add_argument('--input_dir', help='input image dir', default='Input/Images')
@@ -82,10 +103,11 @@ if __name__ == '__main__':
 
         out = SinGAN_generate(Gs_sr, Zs_sr, reals_sr, NoiseAmp_sr, opt, in_s=reals_sr[0], num_samples=1)
 
-        for image, embedding in out:
-            print(image.shape, embedding.shape)
+        images = list(zip(*out))[0]
+        embeddings = list(zip(*out))[1]
 
-        print(len(out))
+        inputs, targets = get_SR_inputs_targets(images)
+
 
 
 
