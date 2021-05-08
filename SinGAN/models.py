@@ -184,3 +184,48 @@ class GeneratorConcatSkip2CleanAdd(nn.Module):
         if self.once:
             self.once = False
         return x+y, embedding
+
+
+
+class SR(nn.Module):
+    def __init__(self, embeddings):
+        super(SR, self).__init__()
+        
+        embeddings = [x.squeeze(0).resize_((32, 32, 32)) for x in embeddings]
+        embeddings = torch.cat(embeddings).unsqueeze(0).to('cuda:0')
+
+        emb_down_block = DownBlock(in_channel = embeddings.shape[1], out_channel = 16, 
+                                    ker_size = 5, padd = 0, stride = 1).to('cuda:0')
+
+        emb_conv = emb_down_block(embeddings)
+        self.emb = emb_conv.view(-1)
+        emb_size = self.emb.shape[0]
+
+        self.linear1 = nn.Linear(emb_size + 2, 512 * 2)
+        self.relu1 = nn.ReLU()
+        self.linear2 = nn.Linear(512 * 2 + 2, 512)
+        self.relu2 = nn.ReLU()
+        self.linear3 = nn.Linear(512 + 2, 64)
+        self.relu3 = nn.ReLU()
+        self.linear4 = nn.Linear(64 + 2, 3)
+
+    def forward(self, locs):
+        
+        embeddings_repeated = self.emb.repeat(locs.shape[0], 1, 1)
+        print(embeddings_repeated.shape, locs.shape)
+        embeddings_with_coords = torch.cat([embeddings_repeated, locs], dim=2)
+        
+        y = self.linear1(embeddings_with_coords)
+        y = self.relu1(y)
+        y = torch.cat([y, locs], dim=2)
+        y = self.linear2(y)
+        y = self.relu2(y)
+        y = torch.cat([y, locs], dim=2)
+        y = self.linear3(y)
+        y = self.relu3(y)
+        y = torch.cat([y, locs], dim=2)
+        y = self.linear4(y)
+
+        print(y.shape)
+        
+        return y.squeeze(1)
