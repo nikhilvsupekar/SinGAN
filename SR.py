@@ -82,6 +82,11 @@ if __name__ == '__main__':
 
         out = SinGAN_generate(Gs_sr, Zs_sr, reals_sr, NoiseAmp_sr, opt, in_s=reals_sr[0], num_samples=1)
 
+        for image, embedding in out:
+            print(image.shape, embedding.shape)
+
+        print(len(out))
+
 
 
 
