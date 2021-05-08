@@ -10,7 +10,7 @@ def get_pixel_data_from_image(img, base_img):
     base_img = base_img.squeeze(0).permute(1, 2, 0)
     coords = []
     targets = []
-    
+
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
             color = list(img[i, j].cpu().numpy())
@@ -24,7 +24,7 @@ def get_pixel_data_from_image(img, base_img):
 
 
 def get_SR_inputs_targets(images):
-    coords, targets = tuple(zip(*[get_pixel_data_from_image(img) for img in images]))
+    coords, targets = tuple(zip(*[get_pixel_data_from_image(img, img[0]) for img in images]))
     
     return torch.cat(coords), torch.cat(targets)
     
@@ -109,6 +109,8 @@ if __name__ == '__main__':
 
         images = list(zip(*out))[0]
         embeddings = list(zip(*out))[1]
+
+        torch.save(embeddings, 'embeddings.pt')
 
         inputs, targets = get_SR_inputs_targets(images)
 
