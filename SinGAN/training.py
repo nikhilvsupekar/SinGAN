@@ -7,6 +7,10 @@ import torch.utils.data
 import math
 import matplotlib.pyplot as plt
 from SinGAN.imresize import imresize
+from torch.utils.data import TensorDataset, DataLoader
+import pickle
+import torch
+import tqdm
 
 def train(opt,Gs,Zs,reals,NoiseAmp):
     real_ = functions.read_image(opt)
@@ -323,3 +327,69 @@ def init_models(opt):
     # print(netD)
 
     return netD, netG
+
+
+def train_SR(model, input_tensor, output_tensor, num_epochs = 1000, batch_size = 64, output_dir = 'sr_output'):
+    SEED = 123
+    EPOCH_START = 0
+    EPOCH_END = num_epochs
+    SAVE_FREQ = 25
+    SAVE_PATH = output_dir
+    CONF_NAME = 'conf1'
+
+    LR = 0.0001
+    BATCH_SIZE = batch_size
+    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+
+    train_dataset = TensorDataset(input_tensor, output_tensor)
+    train_dataloader = DataLoader(train_dataset, batch_size = BATCH_SIZE, shuffle = True)
+
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(model.parameters(), lr = LR)
+
+    torch.manual_seed(SEED)
+
+    model.to(device)
+    model.train()
+
+    losses = []
+
+    for epoch in range(EPOCH_START, EPOCH_END):
+
+        running_loss = 0.0
+        running_loss_point = 0.0
+        running_loss_recon = 0.0
+        
+        for i, data in tqdm.tqdm(enumerate(train_dataloader, 0)):
+            # get the inputs; data is a list of [inputs, labels]
+            inputs, labels = data
+            
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            # forward + backward + optimize
+            point_outputs, reconstruction = model(inputs)
+            loss = criterion(point_outputs, labels)
+            
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
+            optimizer.step()
+
+            # print statistics
+            running_loss += loss.item()
+        
+        if epoch % SAVE_FREQ == 0:
+            model_path = os.path.join(SAVE_PATH, CONF_NAME + '_epoch=' + str(epoch) + '.pt')
+            pickle_path = os.path.join(SAVE_PATH, CONF_NAME + '_loss_list_epoch=' + str(epoch) + '.pt')
+            
+            torch.save(model.state_dict(), model_path)
+            with open(pickle_path, 'wb+') as f:
+                pickle.dump(losses, f)
+        
+        print(f"epoch {epoch} loss = {running_loss/(i+1)}")
+        losses.append(running_loss/(i+1))
+
+    print('SR training finished')

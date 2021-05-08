@@ -3,6 +3,8 @@ from SinGAN.manipulate import *
 from SinGAN.training import *
 from SinGAN.imresize import imresize
 import SinGAN.functions as functions
+from SinGAN.models import SR
+from pathlib import Path
 
 
 def get_pixel_data_from_image(img, base_img):
@@ -26,7 +28,7 @@ def get_pixel_data_from_image(img, base_img):
 def get_SR_inputs_targets(images):
     coords, targets = tuple(zip(*[get_pixel_data_from_image(img, img[0]) for img in images]))
     
-    return torch.cat(coords), torch.cat(targets)
+    return torch.cat(coords).unsqueeze(1), torch.cat(targets).unsqueeze(1)
     
 
 
@@ -114,7 +116,8 @@ if __name__ == '__main__':
 
         inputs, targets = get_SR_inputs_targets(images)
 
+        model = SR(embeddings).to('cuda:0')
+        Path('sr_output').mkdir(parents=True, exist_ok=True)
 
-
-
+        train_SR(model, inputs, targets, num_epochs = 10, batch_size = 64, output_dir = 'sr_output')
 
