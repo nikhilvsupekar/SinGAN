@@ -226,4 +226,4 @@ class SR(nn.Module):
         y = torch.cat([y, locs], dim=2)
         y = self.linear4(y)
         
-        return y.squeeze(1)
+        return y

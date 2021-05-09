@@ -26,7 +26,7 @@ def get_pixel_data_from_image(img, base_img):
 
 
 def get_SR_inputs_targets(images):
-    coords, targets = tuple(zip(*[get_pixel_data_from_image(img, img[0]) for img in images]))
+    coords, targets = tuple(zip(*[get_pixel_data_from_image(img, images[0]) for img in images]))
     
     return torch.cat(coords).unsqueeze(1), torch.cat(targets).unsqueeze(1)
     
