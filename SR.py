@@ -31,6 +31,77 @@ def get_SR_inputs_targets(images):
     return torch.cat(coords).unsqueeze(1), torch.cat(targets).unsqueeze(1)
     
 
+def predict(model, input_tensor):
+
+    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    BATCH_SIZE = 128
+
+    dataset = TensorDataset(input_tensor.float().to(device))
+    dataloader = DataLoader(dataset, batch_size = BATCH_SIZE, shuffle = False)
+
+    model.to(device)
+    model.eval()
+
+    inputs = []
+    losses = []
+    running_loss = 0.0
+    outputs = []
+
+    for i, data in tqdm.tqdm(enumerate(dataloader, 0)):
+        
+        input = data[0].to(device)
+        inputs.append(input)
+
+        with torch.no_grad():
+            output = model(input)
+        outputs.append(output)
+        
+        losses.append(running_loss/(i+1))
+
+    # predictions = torch.cat(outputs).squeeze(1).cpu().numpy()
+    return torch.cat(outputs), torch.cat(inputs)
+
+
+
+def create_image_from_output(output_tensor, h, w):
+    x = torch.zeros(1, 3, h, w)
+
+    for i in range(0, h):
+        for j in range(0, w):
+            t = w * i + j
+            x[0, :, i, j] = output_tensor[t, 0, :]
+    
+    return x
+        
+
+
+def predict_image(model, target_h, target_w, base_img, output_file_name = 'sr_img_output.png'):
+    # base_img = base_img.squeeze(0).permute(1, 2, 0)
+    coords = []
+    scaled_coords = []
+
+    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+
+    for i in range(target_h):
+        for j in range(target_w):
+            coords.append([i, j])
+            scaled_coords.append([i * base_img.shape[2] / target_h, j * base_img.shape[3] / target_w])
+
+    input_tensor = torch.from_numpy(np.array(scaled_coords)).unsqueeze(1).float().to(device)
+
+    pred, inp = predict(model, input_tensor)
+    # reshape_size = list(pred.permute(1, 2, 0).shape[0:2]) + [target_h, target_w]
+    # pred_img = pred.permute(1, 2, 0).view(*reshape_size)
+    pred_img = create_image_from_output(pred, target_h, target_w)
+    
+    plt.figure(figsize = (8, 15))
+
+    img_plot = functions.convert_image_np(pred_img)
+    # plt.imshow(img_plot)
+    plt.imsave(output_file_name, img_plot, vmin=0, vmax=1)
+    plt.show()
+
+
 
 if __name__ == '__main__':
     parser = get_arguments()
@@ -119,5 +190,7 @@ if __name__ == '__main__':
         model = SR(embeddings).to('cuda:0')
         Path('sr_output').mkdir(parents=True, exist_ok=True)
 
-        train_SR(model, inputs, targets, num_epochs = 1000, batch_size = 64, output_dir = 'sr_output')
+        model = train_SR(model, inputs, targets, num_epochs = 1000, batch_size = 64, output_dir = 'sr_output')
 
+        predict_image(model, target_h = 27, target_w = 18, base_img = images[0], output_file_name = 'sr_low.png')
+        predict_image(model, target_h = 480, target_w = 320, base_img = images[0], output_file_name = 'sr_high.png')
