@@ -18,8 +18,8 @@ def get_pixel_data_from_image(img, base_img):
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
             color = list(img[i, j].cpu().numpy())
-            scaled_i = i * base_img.shape[0] / img.shape[0]
-            scaled_j = j * base_img.shape[1] / img.shape[1]
+            scaled_i = i * (base_img.shape[0] - 1) / (img.shape[0] - 1)
+            scaled_j = j * (base_img.shape[1] - 1) / (img.shape[1] - 1)
 
             coords.append([scaled_i, scaled_j])
             targets.append(color)
@@ -87,7 +87,7 @@ def predict_image(model, target_h, target_w, base_img, output_file_name = 'sr_im
     for i in range(target_h):
         for j in range(target_w):
             coords.append([i, j])
-            scaled_coords.append([i * base_img.shape[2] / target_h, j * base_img.shape[3] / target_w])
+            scaled_coords.append([i * (base_img.shape[2] - 1) / (target_h - 1), j * (base_img.shape[3] - 1) / (target_w - 1)])
 
     input_tensor = torch.from_numpy(np.array(scaled_coords)).unsqueeze(1).float().to(device)
 
