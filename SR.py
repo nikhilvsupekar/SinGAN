@@ -109,8 +109,8 @@ def edgeSR_generate(img_path, sr_factor, model, target_h, target_w, base_img, ou
     img1 = img.imread(img_path)
 
     edge_img, edge_px = edge_detector(img_path, target_h, target_w, blur_first=True, blur_kernel_size=(2,2))
-    hr_pixels = get_HR_edge_pixels(edge_px, sr_factor)
-
+    # hr_pixels = get_HR_edge_pixels(edge_px, sr_factor)
+    hr_pixels = np.array(edge_px)
     hr_pixels[:, 0] = (base_img.shape[2] - 1) * hr_pixels[:, 0] / hr_pixels[:, 0].max()
     hr_pixels[:, 1] = (base_img.shape[3] - 1) * hr_pixels[:, 1] / hr_pixels[:, 1].max()
 
@@ -119,22 +119,23 @@ def edgeSR_generate(img_path, sr_factor, model, target_h, target_w, base_img, ou
     pred, inp = predict(model, input_tensor)
     
     # inp = inp.squeeze(1).cpu().numpy()
-    inp = hr_pixels
+    # inp = hr_pixels
     pred = pred.squeeze(1).cpu().numpy()
 
-    inp[:, 0] = inp[:, 0] * (target_h - 1) / base_img.shape[2]
-    inp[:, 1] = inp[:, 1] * (target_w - 1) / base_img.shape[3]
-    inp = inp.astype(int)
-    inp[:, 0] = np.clip(inp[:, 0], 0, target_h - 1)
-    inp[:, 1] = np.clip(inp[:, 1], 0, target_w - 1)
+    # inp[:, 0] = inp[:, 0] * (target_h - 1) / base_img.shape[2]
+    # inp[:, 1] = inp[:, 1] * (target_w - 1) / base_img.shape[3]
+    # inp = inp.astype(int)
+    # inp[:, 0] = np.clip(inp[:, 0], 0, target_h - 1)
+    # inp[:, 1] = np.clip(inp[:, 1], 0, target_w - 1)
 
     img1 = cv2.resize(img1, dsize=(target_h, target_w))
     img1 = img1 / 255
     img1 = (img1 - 0.5) * 2
     img1 = np.clip(img1, -1, 1)
 
+    hr_pixels = np.array(edge_px)
     for i in range(pred.shape[0]):
-        hr_x, hr_y = tuple(inp[i, :])
+        hr_x, hr_y = tuple(hr_pixels[i, :])
         color = pred[i, :]
 
         img1[hr_x, hr_y] = color
