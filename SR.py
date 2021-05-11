@@ -6,6 +6,8 @@ import SinGAN.functions as functions
 from SinGAN.models import SR
 from pathlib import Path
 import matplotlib.pyplot as plt
+import cv2
+from skimage import io as img
 
 def get_pixel_data_from_image(img, base_img):
     img = img.squeeze(0).permute(1, 2, 0)
@@ -101,6 +103,42 @@ def predict_image(model, target_h, target_w, base_img, output_file_name = 'sr_im
     plt.imsave(output_file_name, img_plot, vmin=0, vmax=1)
     plt.show()
 
+
+def edgeSR_generate(img_path, sr_factor, model, target_h, target_w, base_img, output_file_name = 'edge_SR.png'):
+    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    img1 = img.imread(img_path)
+
+    edge_img, edge_px = edge_detector(img_path, blur_first=True, blur_kernel_size=(2,2))
+    hr_pixels = get_HR_edge_pixels(edge_px, sr_factor)
+
+    hr_pixels[:, 0] = base_img.shape[2] * hr_pixels[:, 0] / hr_pixels[:, 0].max()
+    hr_pixels[:, 1] = base_img.shape[3] * hr_pixels[:, 1] / hr_pixels[:, 1].max()
+
+    input_tensor = torch.from_numpy(hr_pixels).unsqueeze(1).float().to(device)
+
+    pred, inp = predict(model, input_tensor)
+    
+    inp = inp.squeeze(0).cpu().numpy()
+    pred = pred.squeeze(0).cpu().numpy()
+
+    inp[:, 0] = inp[:, 0] * target_h / base_img.shape[2]
+    inp[:, 1] = inp[:, 1] * target_w / base_img.shape[3]
+    inp = inp.astype(int)
+    inp[:, 0] = np.clip(0, target_h - 1)
+    inp[:, 1] = np.clip(0, target_w - 1)
+
+    img1 = cv2.resize(img1, dsize=(target_h, target_w))
+
+    for i in range(pred.shape[0]):
+        hr_x, hr_y = tuple(inp[i, :])
+        color = pred[i, :]
+
+        img1[hr_x, hr_y] = color
+
+    img1 = torch.from_numpy().to(device).permute(2, 0, 1).unsqueeze(0)
+    img_plot = functions.convert_image_np(img1)
+    plt.imsave(output_file_name, img_plot, vmin=0, vmax=1)
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -206,3 +244,14 @@ if __name__ == '__main__':
         plt.figure(figsize = (12, 7))
         plt.plot(range(len(losses)), losses)
         plt.savefig('loss.png')
+
+        for sr_factor in [2, 4, 8]:
+            edgeSR_generate(
+                f'{opt.input_dir}/{opt.input_name}', 
+                sr_factor = sr_factor, 
+                model = model, 
+                target_h = input_h * sr_factor, 
+                target_w = input_w * sr_factor, 
+                base_img = images[0], 
+                output_file_name = f'edge_SR_{sr_factor}x.png'
+            )

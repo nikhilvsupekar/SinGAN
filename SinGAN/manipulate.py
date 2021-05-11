@@ -24,6 +24,10 @@ import matplotlib.pyplot as plt
 from SinGAN.training import *
 from config import get_arguments
 
+import cv2
+import numpy as np
+from matplotlib import pyplot as plt
+
 def generate_gif(Gs,Zs,reals,NoiseAmp,opt,alpha=0.1,beta=0.9,start_scale=2,fps=10):
 
     in_s = torch.full(Zs[0].shape, 0, device=opt.device)
@@ -163,4 +167,46 @@ def SinGAN_generate(Gs,Zs,reals,NoiseAmp,opt,in_s=None,scale_v=1,scale_h=1,n=0,g
         n+=1
     # return I_curr.detach()
     return image_embeddings
+
+
+
+
+def edge_detector(image_path, t1=100, t2=200, aperture=3, blur_first=False, blur_kernel_size=(5,5)):
+    """returns image with detected edges and a list of edge pixels"""
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if blur_first:
+        img = cv2.blur(img, ksize=blur_kernel_size)
+        img = cv2.Canny(img, threshold1=t1, threshold2=t2, apertureSize=aperture)
+        edgepixel_list = list(zip(np.nonzero(img)[0], np.nonzero(img)[1]))
+        return img, edgepixel_list
+
+
+def proper_neighbors(p1, p2):
+    return (np.linalg.norm(np.array(p1) - np.array(p2)) <= np.linalg.norm(np.array([1, 1]))) and (p1 != p2)
+
+
+def interpolate_edge(e, sr_factor):
+    p1, p2 = e 
+    xs = list(np.linspace(p1[0], p2[0], sr_factor + 1, endpoint=True))
+    ys = list(np.linspace(p1[1], p2[1], sr_factor + 1, endpoint=True))
+    return list(zip(xs, ys))
+
+def get_HR_edge_pixels(edge_px, sr_factor):
+    edge_list = []
+
+    for p1 in edge_px:
+        for p2 in edge_px:
+            if proper_neighbors(p1, p2):
+                if p1[0] <= p2[0] and (p1, p2) not in edge_list:
+                    edge_list.append((p1, p2))
+                elif (p2, p1) not in edge_list:
+                    edge_list.append((p2, p1))
+    
+    interpolated_edges = []
+    for e in edge_list:
+        interpolated_edges.append(interpolate_edge(e, sr_factor))
+    
+    hr_pixels = [p for e in interpolated_edges for p in e]
+
+    return np.array(hr_pixels)
 
