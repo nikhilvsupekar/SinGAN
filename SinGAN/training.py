@@ -393,4 +393,4 @@ def train_SR(model, input_tensor, output_tensor, num_epochs = 1000, batch_size =
         losses.append(running_loss/(i+1))
 
     print('SR training finished')
-    return model
+    return model, losses

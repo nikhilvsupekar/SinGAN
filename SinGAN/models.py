@@ -203,13 +203,28 @@ class SR(nn.Module):
             self.emb = emb_conv.view(-1)
             emb_size = self.emb.shape[0]
 
-        self.linear1 = nn.Linear(emb_size + 2, 512 * 2)
+        self.linear1 = nn.Linear(emb_size + 2, 512 * 4)
         self.relu1 = nn.ReLU()
-        self.linear2 = nn.Linear(512 * 2 + 2, 512)
+        self.linear2 = nn.Linear(512 * 4 + 2, 512 * 2)
         self.relu2 = nn.ReLU()
-        self.linear3 = nn.Linear(512 + 2, 64)
+        self.linear3 = nn.Linear(512 * 2 + 2, 512)
         self.relu3 = nn.ReLU()
-        self.linear4 = nn.Linear(64 + 2, 3)
+        self.linear4 = nn.Linear(512 + 2, 128)
+        self.relu4 = nn.ReLU()
+        self.linear5 = nn.Linear(128 + 2, 64)
+        self.relu5 = nn.ReLU()
+        self.linear6 = nn.Linear(64 + 2, 3)
+
+    def set_emb(self, embeddings):
+        with torch.no_grad():
+            embeddings = [x.squeeze(0).resize_((32, 32, 32)) for x in embeddings]
+            embeddings = torch.cat(embeddings).unsqueeze(0).to('cuda:0')
+
+            emb_down_block = DownBlock(in_channel = embeddings.shape[1], out_channel = 16, 
+                                        ker_size = 5, padd = 0, stride = 1).to('cuda:0')
+
+            emb_conv = emb_down_block(embeddings)
+            self.emb = emb_conv.view(-1)
 
     def forward(self, locs):
         
@@ -226,5 +241,11 @@ class SR(nn.Module):
         y = self.relu3(y)
         y = torch.cat([y, locs], dim=2)
         y = self.linear4(y)
+        y = self.relu4(y)
+        y = torch.cat([y, locs], dim=2)
+        y = self.linear5(y)
+        y = self.relu5(y)
+        y = torch.cat([y, locs], dim=2)
+        y = self.linear6(y)
         
         return y

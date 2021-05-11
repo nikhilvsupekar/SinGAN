@@ -5,7 +5,7 @@ from SinGAN.imresize import imresize
 import SinGAN.functions as functions
 from SinGAN.models import SR
 from pathlib import Path
-
+import matplotlib.pyplot as plt
 
 def get_pixel_data_from_image(img, base_img):
     img = img.squeeze(0).permute(1, 2, 0)
@@ -109,6 +109,8 @@ if __name__ == '__main__':
     parser.add_argument('--input_name', help='training image name', default="33039_LR.png")#required=True)
     parser.add_argument('--sr_factor', help='super resolution factor', type=float, default=4)
     parser.add_argument('--mode', help='task to be done', default='SR')
+    parser.add_argument('--sr_epochs', help='SR epochs', default=1000)
+
     opt = parser.parse_args()
     opt = functions.post_config(opt)
     Gs = []
@@ -191,12 +193,16 @@ if __name__ == '__main__':
         model = SR(embeddings).to('cuda:0')
         Path('sr_output').mkdir(parents=True, exist_ok=True)
 
-        model = train_SR(model, inputs, targets, num_epochs = 1000, batch_size = 64, output_dir = 'sr_output')
+        model, losses = train_SR(model, inputs, targets, num_epochs = opt.sr_epochs, batch_size = 64, output_dir = 'sr_output')
 
         base_h, base_w = images[0].shape[2], images[0].shape[3]
-        
+
         predict_image(model, target_h = base_h, target_w = base_w, base_img = images[0], output_file_name = 'sr_low.png')
         predict_image(model, target_h = input_h, target_w = input_w, base_img = images[0], output_file_name = 'sr_orig.png')
         predict_image(model, target_h = input_h * 2, target_w = input_w * 2, base_img = images[0], output_file_name = 'sr_high_2x.png')
         predict_image(model, target_h = input_h * 4, target_w = input_w * 4, base_img = images[0], output_file_name = 'sr_high_4x.png')
         predict_image(model, target_h = input_h * 8, target_w = input_w * 8, base_img = images[0], output_file_name = 'sr_high_8x.png')
+
+        plt.figure(figsize = (12, 7))
+        plt.plot(range(len(losses)), losses)
+        plt.savefig('loss.png')
