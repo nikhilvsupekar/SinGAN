@@ -138,6 +138,7 @@ if __name__ == '__main__':
         else:
             print('*** Train SinGAN for SR ***')
             real = functions.read_image(opt)
+            input_h, input_w = real.shape[2], real.shape[3]
             opt.min_size = 18
             real = functions.adjust_scales2image_SR(real, opt)
             train(opt, Gs, Zs, reals, NoiseAmp)
@@ -167,7 +168,7 @@ if __name__ == '__main__':
         # plt.imsave('%s/%s_HR.png' % (dir2save,opt.input_name[:-4]), functions.convert_image_np(out.detach()), vmin=0, vmax=1)
 
 
-        for j in range(9):
+        for j in range(iter_num):
             real_ = reals[j]
             reals_sr.append(real_)
             Gs_sr.append(Gs[j])
@@ -192,5 +193,10 @@ if __name__ == '__main__':
 
         model = train_SR(model, inputs, targets, num_epochs = 1000, batch_size = 64, output_dir = 'sr_output')
 
-        predict_image(model, target_h = 27, target_w = 18, base_img = images[0], output_file_name = 'sr_low.png')
-        predict_image(model, target_h = 480, target_w = 320, base_img = images[0], output_file_name = 'sr_high.png')
+        base_h, base_w = images[0].shape[2], images[0].shape[3]
+        
+        predict_image(model, target_h = base_h, target_w = base_w, base_img = images[0], output_file_name = 'sr_low.png')
+        predict_image(model, target_h = input_h, target_w = input_w, base_img = images[0], output_file_name = 'sr_orig.png')
+        predict_image(model, target_h = input_h * 2, target_w = input_w * 2, base_img = images[0], output_file_name = 'sr_high_2x.png')
+        predict_image(model, target_h = input_h * 4, target_w = input_w * 4, base_img = images[0], output_file_name = 'sr_high_4x.png')
+        predict_image(model, target_h = input_h * 8, target_w = input_w * 8, base_img = images[0], output_file_name = 'sr_high_8x.png')

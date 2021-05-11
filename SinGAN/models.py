@@ -128,6 +128,7 @@ class GeneratorConcatSkip2CleanAdd(nn.Module):
         self.final_size = None
         self.N = N
         self.opt = opt
+        self.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
     def forward(self,x,y):
 
@@ -139,7 +140,7 @@ class GeneratorConcatSkip2CleanAdd(nn.Module):
                 nn.Conv2d(max(self.N,self.opt.min_nfc),self.opt.nc_im,kernel_size=self.opt.ker_size,stride =1,padding=self.opt.padd_size),
                 nn.Upsample(size = (self.final_size), mode='bilinear', align_corners=True),
                 nn.Tanh()
-            ).to('cuda:0')
+            ).to(self.device)
         x = self.head(x)
         if self.once:
             print(f'GENERATOR head output = {x.shape}')
