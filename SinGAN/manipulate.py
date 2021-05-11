@@ -171,14 +171,15 @@ def SinGAN_generate(Gs,Zs,reals,NoiseAmp,opt,in_s=None,scale_v=1,scale_h=1,n=0,g
 
 
 
-def edge_detector(image_path, t1=100, t2=200, aperture=3, blur_first=False, blur_kernel_size=(5,5)):
+def edge_detector(image_path, target_h, target_w, t1=100, t2=200, aperture=3, blur_first=False, blur_kernel_size=(5,5)):
     """returns image with detected edges and a list of edge pixels"""
-    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    img1 = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    # img1 = cv2.resize(img1, dsize=(target_h, target_w))
     if blur_first:
-        img = cv2.blur(img, ksize=blur_kernel_size)
-        img = cv2.Canny(img, threshold1=t1, threshold2=t2, apertureSize=aperture)
-        edgepixel_list = list(zip(np.nonzero(img)[0], np.nonzero(img)[1]))
-        return img, edgepixel_list
+        img1 = cv2.blur(img1, ksize=blur_kernel_size)
+        img1 = cv2.Canny(img1, threshold1=t1, threshold2=t2, apertureSize=aperture)
+        edgepixel_list = list(zip(np.nonzero(img1)[0], np.nonzero(img1)[1]))
+        return img1, edgepixel_list
 
 
 def proper_neighbors(p1, p2):

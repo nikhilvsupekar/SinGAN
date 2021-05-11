@@ -92,9 +92,9 @@ def predict_image(model, target_h, target_w, base_img, output_file_name = 'sr_im
     input_tensor = torch.from_numpy(np.array(scaled_coords)).unsqueeze(1).float().to(device)
 
     pred, inp = predict(model, input_tensor)
-    # reshape_size = list(pred.permute(1, 2, 0).shape[0:2]) + [target_h, target_w]
-    # pred_img = pred.permute(1, 2, 0).view(*reshape_size)
-    pred_img = create_image_from_output(pred, target_h, target_w)
+    reshape_size = list(pred.permute(1, 2, 0).shape[0:2]) + [target_h, target_w]
+    pred_img = pred.permute(1, 2, 0).view(*reshape_size)
+    # pred_img = create_image_from_output(pred, target_h, target_w)
     
     plt.figure(figsize = (8, 15))
 
@@ -108,36 +108,43 @@ def edgeSR_generate(img_path, sr_factor, model, target_h, target_w, base_img, ou
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     img1 = img.imread(img_path)
 
-    edge_img, edge_px = edge_detector(img_path, blur_first=True, blur_kernel_size=(2,2))
+    edge_img, edge_px = edge_detector(img_path, target_h, target_w, blur_first=True, blur_kernel_size=(2,2))
     hr_pixels = get_HR_edge_pixels(edge_px, sr_factor)
 
-    hr_pixels[:, 0] = base_img.shape[2] * hr_pixels[:, 0] / hr_pixels[:, 0].max()
-    hr_pixels[:, 1] = base_img.shape[3] * hr_pixels[:, 1] / hr_pixels[:, 1].max()
+    hr_pixels[:, 0] = (base_img.shape[2] - 1) * hr_pixels[:, 0] / hr_pixels[:, 0].max()
+    hr_pixels[:, 1] = (base_img.shape[3] - 1) * hr_pixels[:, 1] / hr_pixels[:, 1].max()
 
     input_tensor = torch.from_numpy(hr_pixels).unsqueeze(1).float().to(device)
 
     pred, inp = predict(model, input_tensor)
     
-    inp = inp.squeeze(0).cpu().numpy()
-    pred = pred.squeeze(0).cpu().numpy()
+    # inp = inp.squeeze(1).cpu().numpy()
+    inp = hr_pixels
+    pred = pred.squeeze(1).cpu().numpy()
 
-    inp[:, 0] = inp[:, 0] * target_h / base_img.shape[2]
-    inp[:, 1] = inp[:, 1] * target_w / base_img.shape[3]
+    inp[:, 0] = inp[:, 0] * (target_h - 1) / base_img.shape[2]
+    inp[:, 1] = inp[:, 1] * (target_w - 1) / base_img.shape[3]
     inp = inp.astype(int)
-    inp[:, 0] = np.clip(0, target_h - 1)
-    inp[:, 1] = np.clip(0, target_w - 1)
+    inp[:, 0] = np.clip(inp[:, 0], 0, target_h - 1)
+    inp[:, 1] = np.clip(inp[:, 1], 0, target_w - 1)
 
     img1 = cv2.resize(img1, dsize=(target_h, target_w))
+    img1 = img1 / 255
+    img1 = (img1 - 0.5) * 2
+    img1 = np.clip(img1, -1, 1)
 
     for i in range(pred.shape[0]):
         hr_x, hr_y = tuple(inp[i, :])
         color = pred[i, :]
 
         img1[hr_x, hr_y] = color
-
-    img1 = torch.from_numpy().to(device).permute(2, 0, 1).unsqueeze(0)
-    img_plot = functions.convert_image_np(img1)
-    plt.imsave(output_file_name, img_plot, vmin=0, vmax=1)
+    
+    img1 = (img1 + 1) / 2
+    img1 = np.clip(img1, 0, 1)
+    
+    # img1 = torch.from_numpy(img1).to(device).permute(2, 0, 1).unsqueeze(0)
+    # img_plot = functions.convert_image_np(img1)
+    plt.imsave(output_file_name, img1, vmin=0, vmax=1)
     plt.show()
 
 
