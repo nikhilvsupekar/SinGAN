@@ -12,7 +12,7 @@ import pickle
 import torch
 import tqdm
 import torch.optim as optim
-
+from torch.optim.lr_scheduler import StepLR
 
 def train(opt,Gs,Zs,reals,NoiseAmp):
     real_ = functions.read_image(opt)
@@ -348,6 +348,7 @@ def train_SR(model, input_tensor, output_tensor, num_epochs = 1000, batch_size =
 
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr = LR)
+    scheduler = StepLR(optimizer, step_size=500, gamma=0.7)
 
     torch.manual_seed(SEED)
 
@@ -380,7 +381,7 @@ def train_SR(model, input_tensor, output_tensor, num_epochs = 1000, batch_size =
 
             # print statistics
             running_loss += loss.item()
-        
+        scheduler.step()
         if epoch % SAVE_FREQ == 0:
             model_path = os.path.join(SAVE_PATH, CONF_NAME + '_epoch=' + str(epoch) + '.pt')
             pickle_path = os.path.join(SAVE_PATH, CONF_NAME + '_loss_list_epoch=' + str(epoch) + '.pt')

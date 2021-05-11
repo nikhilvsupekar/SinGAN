@@ -193,7 +193,7 @@ if __name__ == '__main__':
         model = SR(embeddings).to('cuda:0')
         Path('sr_output').mkdir(parents=True, exist_ok=True)
 
-        model, losses = train_SR(model, inputs, targets, num_epochs = opt.sr_epochs, batch_size = 64, output_dir = 'sr_output')
+        model, losses = train_SR(model, inputs, targets, num_epochs = int(opt.sr_epochs), batch_size = 64, output_dir = 'sr_output')
 
         base_h, base_w = images[0].shape[2], images[0].shape[3]
 
