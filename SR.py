@@ -168,7 +168,7 @@ def edgeSR_merge_images(orig_img_path, sr_img_path, sr_factor):
     sr_img = cv2.imread(sr_img_path)
     scaled_img = cv2.resize(orig_img, dsize=(orig_img.shape[1] * sr_factor, orig_img.shape[0] * sr_factor))
 
-    orig_img = cv2.cvtColor(orig_img, cv2.COLOR_BGR2RGB)
+    scaled_img = cv2.cvtColor(scaled_img, cv2.COLOR_BGR2RGB)
     sr_img = cv2.cvtColor(sr_img, cv2.COLOR_BGR2RGB)
 
     for x, y in edge_px:
