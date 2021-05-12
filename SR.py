@@ -119,12 +119,12 @@ def edgeSR_generate(img_path, sr_factor, model, target_h, target_w, base_img, ou
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     img1 = img.imread(img_path)
 
-    edge_img, edge_px = edge_detector(img_path, target_h, target_w, t1=50, t2=100, blur_first=False, blur_kernel_size=(2,2))
+    edge_img, edge_px = edge_detector(img_path, sr_factor, t1=50, t2=100, blur_first=False, blur_kernel_size=(2,2))
     # hr_pixels = get_HR_edge_pixels(edge_px, sr_factor)
     edge_px = get_edge_neighbors(edge_px, sr_factor, target_h, target_w)
     hr_pixels = np.array(edge_px)
-    hr_pixels[:, 0] = (base_img.shape[2] - 1) * hr_pixels[:, 0] / hr_pixels[:, 0].max()
-    hr_pixels[:, 1] = (base_img.shape[3] - 1) * hr_pixels[:, 1] / hr_pixels[:, 1].max()
+    hr_pixels[:, 0] = (base_img.shape[2] - 1) * hr_pixels[:, 0] / (target_h - 1)
+    hr_pixels[:, 1] = (base_img.shape[3] - 1) * hr_pixels[:, 1] / (target_w - 1)
 
     input_tensor = torch.from_numpy(hr_pixels).unsqueeze(1).float().to(device)
 
@@ -159,6 +159,21 @@ def edgeSR_generate(img_path, sr_factor, model, target_h, target_w, base_img, ou
     # img_plot = functions.convert_image_np(img1)
     plt.imsave(output_file_name, img1, vmin=0, vmax=1)
     plt.show()
+
+
+def edgeSR_merge_images(orig_img_path, sr_img_path, sr_factor):
+    edge_img, edge_px = edge_detector(orig_img_path, sr_factor = sr_factor, t1=50, t2=100, blur_first=False, blur_kernel_size=(2,2))
+
+    orig_img = cv2.imread(orig_img_path)
+    sr_img = cv2.imread(sr_img_path)
+    scaled_img = cv2.resize(orig_img, dsize=(orig_img.shape[1] * sr_factor, orig_img.shape[0] * sr_factor))
+
+    for x, y in edge_px:
+        scaled_img[x, y] = sr_img[x, y]
+    
+    plt.imsave(f'edgeSR_merged_{sr_factor}x.png', scaled_img, vmin=0, vmax=1)
+    # plt.show()
+
 
 
 if __name__ == '__main__':
@@ -275,3 +290,6 @@ if __name__ == '__main__':
                 base_img = images[0], 
                 output_file_name = f'edge_SR_{sr_factor}x.png'
             )
+        
+        for sr_factor in [2, 4, 8]:
+            edgeSR_merge_images(f'{opt.input_dir}/{opt.input_name}', f'sr_high_{sr_factor}x.png', sr_factor)
