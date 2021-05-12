@@ -104,12 +104,24 @@ def predict_image(model, target_h, target_w, base_img, output_file_name = 'sr_im
     plt.show()
 
 
+def get_edge_neighbors(edge_px, sr_factor, target_h, target_w):
+    thick_edge_px = []
+
+    for x, y in edge_px:
+        for i in range(-sr_factor, sr_factor):
+            for j in range(-sr_factor, sr_factor):
+                if (0 <= x + i < target_h) and (0 <= y + j < target_w):
+                    thick_edge_px.append((x + i, y + j))
+    
+    return thick_edge_px
+
 def edgeSR_generate(img_path, sr_factor, model, target_h, target_w, base_img, output_file_name = 'edge_SR.png'):
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     img1 = img.imread(img_path)
 
-    edge_img, edge_px = edge_detector(img_path, target_h, target_w, blur_first=True, blur_kernel_size=(2,2))
+    edge_img, edge_px = edge_detector(img_path, target_h, target_w, t1=50, t2=100, blur_first=False, blur_kernel_size=(2,2))
     # hr_pixels = get_HR_edge_pixels(edge_px, sr_factor)
+    edge_px = get_edge_neighbors(edge_px, sr_factor, target_h, target_w)
     hr_pixels = np.array(edge_px)
     hr_pixels[:, 0] = (base_img.shape[2] - 1) * hr_pixels[:, 0] / hr_pixels[:, 0].max()
     hr_pixels[:, 1] = (base_img.shape[3] - 1) * hr_pixels[:, 1] / hr_pixels[:, 1].max()
@@ -128,7 +140,7 @@ def edgeSR_generate(img_path, sr_factor, model, target_h, target_w, base_img, ou
     # inp[:, 0] = np.clip(inp[:, 0], 0, target_h - 1)
     # inp[:, 1] = np.clip(inp[:, 1], 0, target_w - 1)
 
-    img1 = cv2.resize(img1, dsize=(target_h, target_w))
+    img1 = cv2.resize(img1, dsize=(target_w, target_h))
     img1 = img1 / 255
     img1 = (img1 - 0.5) * 2
     img1 = np.clip(img1, -1, 1)
