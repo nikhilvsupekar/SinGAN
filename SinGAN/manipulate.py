@@ -177,9 +177,9 @@ def edge_detector(image_path, target_h, target_w, t1=100, t2=200, aperture=3, bl
     img1 = cv2.resize(img1, dsize=(target_w, target_h))
     if blur_first:
         img1 = cv2.blur(img1, ksize=blur_kernel_size)
-        img1 = cv2.Canny(img1, threshold1=t1, threshold2=t2, apertureSize=aperture)
-        edgepixel_list = list(zip(np.nonzero(img1)[0], np.nonzero(img1)[1]))
-        return img1, edgepixel_list
+    img1 = cv2.Canny(img1, threshold1=t1, threshold2=t2, apertureSize=aperture)
+    edgepixel_list = list(zip(np.nonzero(img1)[0], np.nonzero(img1)[1]))
+    return img1, edgepixel_list
 
 
 def proper_neighbors(p1, p2):
